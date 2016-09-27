@@ -118,9 +118,6 @@ class PlayerForm(messages.Message):
     winningPercentage = ndb.FloatField(6, required=True)
     points = messages.IntegerField(7)
 
-class PlayerMiniForm(messages.Message):
-    name = messages.StringField(1)
-
 class PlayerForms(messages.Message):
     items = messages.MessageField(PlayerForm, 1, repeated = True)
 
@@ -150,4 +147,11 @@ class ScoreForm(messages.Message):
 class ScoreForms(messages.Message):
     items = messages.MessageField(ScoreForm, 1, repeated=True)
 
+class MoveForm(messages.Message):
+    """Used to make a move in an existing game"""
+    name = messages.StringField(1, required=True)
+    move = messages.IntegerField(2, required=True)
 
+class StringMessage(messages.Message):
+    """StringMessage-- outbound (single) string message"""
+    data = messages.StringField(1, required=True)
