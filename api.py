@@ -6,6 +6,7 @@ from google.appengine.api import taskqueue
 
 from models import Player, Game, Score, NewGameForm, StringMessage, GameForm, MoveForm, ScoreForm, ScoreForms, GameForms, PlayerForm, PlayerForms
 from utils import get_by_urlsafe, check_winner
+from settings import WEB_CLIENT_ID
 
 EMAIL_SCOPE = endpoints.EMAIL_SCOPE
 API_EXPLORER_CLIENT_ID = endpoints.API_EXPLORER_CLIENT_ID
@@ -16,6 +17,7 @@ API_EXPLORER_CLIENT_ID = endpoints.API_EXPLORER_CLIENT_ID
 PLAYER_REQUEST = endpoints.ResourceContainer(name=messages.StringField(1), email=messages.StringField(2))
 
 # MEMCACHE_GAMES_PLAYED = "GAMES_PLAYED"
+
 
 @endpoints.api(name='tic_tac_toe',
                version='v1',
@@ -38,6 +40,16 @@ class TicTacToeApi(remote.Service):
         player = Player(name=request.name, email=request.email)
         player.put()
         return StringMessage(message='Player {} created!'.format(request.name))
+
+    @endpoints.method(response_message=PlayerForms,
+                      path='player/ranking',
+                      name='get_player_rankings',
+                      http_method='GET')
+    def get_player_rankings(self, request):
+        """Return rankings for all Players"""
+        players = Player.query(Player.gamesCompleted > 0).fetch()
+        players = sorted(players, key=lambda x :x._points, reverse=True)
+        return PlayerForms(items=[player._copyPlayerToForm for player in players])
 
 
 
