@@ -35,7 +35,7 @@ class TicTacToeApi(remote.Service):
         """Check if user name is unique"""
         if Player.get_player_by_name(request.name):
             raise endpoints.ConflictException('The name has been taken!')
-        if not mail.is_email.valid(request.email):
+        if not mail.is_email_valid(request.email):
             raise endpoints.BadRequestException('Please input a valid email address')
         player = Player(name=request.name, email=request.email)
         player.put()

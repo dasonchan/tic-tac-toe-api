@@ -88,7 +88,7 @@ class Game(ndb.Model):
         return gf
 
     @property
-    def _newGame(cls, playerOne, playerTwo):
+    def _newGame(self, playerOne, playerTwo):
         game = Game(playerOne = playerOne,
                     playerTwo = playerTwo,
                     nextMove = playerOne)
