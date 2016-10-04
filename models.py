@@ -1,4 +1,3 @@
-import httplib
 import endpoints
 import datetime
 from protorpc import messages
@@ -58,41 +57,37 @@ class Player(ndb.Model):
 
 class Game(ndb.Model):
     """Define the Game kind"""
-    playerOne = ndb.StringProperty(required=True)
-    playerTwo = ndb.StringProperty(required=True)
+    playerOne = ndb.KeyProperty(required=True)
+    playerTwo = ndb.KeyProperty(required=True)
     board = ndb.PickleProperty(required=True)
-    currentMove = ndb.IntegerProperty(default=0)
     nextMove = ndb.KeyProperty(required=True)
     gameOver = ndb.BooleanProperty(default=False)
     winner = ndb.KeyProperty()
     tie = ndb.BooleanProperty(default=False)
 
-    @property
     def _copyGameToForm(self):
-        gf = GameForm()
-        for field in gf.all_fields():
-            if hasattr(self, field.name):
-                setattr(gf, field.name, getattr(self, field.name))
-            elif field.name == 'urlsafe_key':
-                setattr(gf, field.name, self.key.urlsafe())
-            elif field.name == 'board':
-                setattr(gf, field.name, str(self.board))
-        if winner:
-            winner.get().add_win()
-            loser = playerOne if winner == self.playerTwo else self.playerTwo
-            loser.get().add_loss()
-        else:
-            self.playerOne.get().add_tie
-            self.playerTwo.get().add_tie
-        gf.check_initialized()
-        return gf
-
-    @property
-    def _newGame(self, playerOne, playerTwo):
+        form = GameForm(urlsafe_key=self.key.urlsafe(),
+                        board=str(self.board),
+                        playerOne=self.playerOne.get().name,
+                        playerTwo=self.playerTwo.get().name,
+                        nextMove=self.nextMove.get().name,
+                        gameOver=self.gameOver,
+                        )
+        if self.winner:
+            form.winner = self.winner.get().name
+        if self.tie:
+            form.time = self.tie
+        return form
+    
+    @classmethod
+    def newGame(cls, playerOne, playerTwo):
+        board = ['' for _ in range(9)]
+        
         game = Game(playerOne = playerOne,
                     playerTwo = playerTwo,
-                    nextMove = playerOne)
-        game.board = ['' for _ in range(9)]
+                    nextMove = playerOne,
+                    board = board)
+
         game.put()
         return game
 

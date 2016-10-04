@@ -1,5 +1,5 @@
 import endpoints
-from protorpc import remote, messages
+from protorpc import remote, messages, message_types
 from google.appengine.api import memcache, mail
 from google.appengine.ext import ndb
 from google.appengine.api import taskqueue
@@ -11,9 +11,13 @@ from settings import WEB_CLIENT_ID
 EMAIL_SCOPE = endpoints.EMAIL_SCOPE
 API_EXPLORER_CLIENT_ID = endpoints.API_EXPLORER_CLIENT_ID
 
-# NEW_GAME_REQUEST = endpoints.ResourceContainer(NewGameForm)
-# GET_GAME_REQUEST = endpoints.ResourceContainer(urlsafe_game_key=messages.StringField(1),)
-# MAKE_MOVE_REQUEST = endpoints.ResourceContainer(MoveForm, urlsafe_game_key=messages.StringField(1),)
+NEW_GAME_REQUEST = endpoints.ResourceContainer(
+    message_types.VoidMessage,
+    playerOne=messages.StringField(1),
+    playerTwo=messages.StringField(2)
+    )
+GET_GAME_REQUEST = endpoints.ResourceContainer(urlsafe_game_key=messages.StringField(1),)
+MAKE_MOVE_REQUEST = endpoints.ResourceContainer(MoveForm, urlsafe_game_key=messages.StringField(1),)
 PLAYER_REQUEST = endpoints.ResourceContainer(name=messages.StringField(1), email=messages.StringField(2))
 
 # MEMCACHE_GAMES_PLAYED = "GAMES_PLAYED"
@@ -40,6 +44,7 @@ class TicTacToeApi(remote.Service):
         player = Player(name=request.name, email=request.email)
         player.put()
         return player._copyPlayerToForm
+    
     @endpoints.method(response_message=PlayerForms,
                       path='player/ranking',
                       name='get_player_rankings',
@@ -49,6 +54,23 @@ class TicTacToeApi(remote.Service):
         players = Player.query(Player.gamesCompleted > 0).fetch()
         players = sorted(players, key=lambda x :x._points, reverse=True)
         return PlayerForms(items=[player._copyPlayerToForm for player in players])
+    
+    @endpoints.method(request_message=NEW_GAME_REQUEST,
+                      response_message=GameForm,
+                      path='game',
+                      name='new_game',
+                      http_method='POST')
+    def new_game(self, request):
+        """Start a new game"""
+        playerOne = Player.get_player_by_name(request.playerOne)
+        playerTwo = Player.get_player_by_name(request.playerTwo)
+        # Check if players registered 
+        if not playerOne or not playerTwo:
+            name = request.playerOne if not playerOne else request.playerTwo
+            raise endpoints.NotFoundException('Player %s does not exist' % name)
+        game = Game.newGame(playerOne.key, playerTwo.key)
+        
+        return game._copyGameToForm()
 
 
 
