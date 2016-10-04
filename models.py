@@ -13,7 +13,7 @@ class Player(ndb.Model):
     gamesCompleted = ndb.IntegerProperty(default=0)
 
     @property
-    def _copyPlayerToForm(self):
+    def copyPlayerToForm(self):
         pf = PlayerForm()
         for field in pf.all_fields():
             if hasattr(self, field.name):
@@ -65,7 +65,7 @@ class Game(ndb.Model):
     winner = ndb.KeyProperty()
     tie = ndb.BooleanProperty(default=False)
 
-    def _copyGameToForm(self):
+    def copyGameToForm(self):
         form = GameForm(urlsafe_key=self.key.urlsafe(),
                         board=str(self.board),
                         playerOne=self.playerOne.get().name,

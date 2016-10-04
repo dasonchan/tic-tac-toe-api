@@ -43,7 +43,7 @@ class TicTacToeApi(remote.Service):
             raise endpoints.BadRequestException('Please input a valid email address')
         player = Player(name=request.name, email=request.email)
         player.put()
-        return player._copyPlayerToForm
+        return player.copyPlayerToForm
     
     @endpoints.method(response_message=PlayerForms,
                       path='player/ranking',
@@ -70,8 +70,34 @@ class TicTacToeApi(remote.Service):
             raise endpoints.NotFoundException('Player %s does not exist' % name)
         game = Game.newGame(playerOne.key, playerTwo.key)
         
-        return game._copyGameToForm()
-
-
+        return game.copyGameToForm()
+    
+    @endpoints.method(request_message=GET_GAME_REQUEST,
+                      response_message=GameForm,
+                      path='game/{urlsafe_game_key}',
+                      name='get_game',
+                      http_method='GET')
+    def get_game(self, request):
+        """Return the current game state"""
+        game = get_by_urlsafe(request.urlsafe_game_key, Game)
+        if game:
+            return game.copyGameToForm()
+        else:
+            raise endpoints.NotFoundException('Game does not exist!')
+    
+    @endpoints.method(request_message=PLAYER_REQUEST,
+                      response_message=GameForms,
+                      path='player/games',
+                      name='get_player_games',
+                      http_method='GET')
+    def get_player_games(self, request):
+        """Return all games from Player"""
+        player = Player.get_player_by_name(request.name)
+        if not player:
+            raise endpoints.NotFoundException('Player does not exist')
+        games = Game.query(ndb.OR(Game.playerOne == player.key,
+                                  Game.playerTwo == player.key))
+        
+        return GameForms(items=[game.copyGameToForm() for game in games])
 
 api = endpoints.api_server([TicTacToeApi,])
