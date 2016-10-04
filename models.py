@@ -11,25 +11,25 @@ class Player(ndb.Model):
     email = ndb.StringProperty(required=True)
     wins = ndb.IntegerProperty(default=0)
     ties = ndb.IntegerProperty(default=0)
-    gamesCompleted = ndb.StringProperty(required=True)
+    gamesCompleted = ndb.IntegerProperty(default=0)
 
     @property
     def _copyPlayerToForm(self):
         pf = PlayerForm()
-        for field in pf.all_field():
+        for field in pf.all_fields():
             if hasattr(self, field.name):
                 setattr(pf, field.name, getattr(self, field.name))
         pf.check_initialized()
         return pf
 
     @property
-    def _winningPercentage(self):
+    def winningPercentage(self):
         if self.gamesCompleted > 0:
             return float(self.wins)/float(self.gamesCompleted)
         else:
-            return 0
+            return float(0)
     @property
-    def _points(self):
+    def points(self):
         return self.wins * 3 + self.ties
 
     @classmethod
@@ -58,8 +58,8 @@ class Player(ndb.Model):
 
 class Game(ndb.Model):
     """Define the Game kind"""
-    playerOne = ndb.StringProperty(required=True, kind='Player')
-    playerTwo = ndb.StringProperty(required=True, kind='Player')
+    playerOne = ndb.StringProperty(required=True)
+    playerTwo = ndb.StringProperty(required=True)
     board = ndb.PickleProperty(required=True)
     currentMove = ndb.IntegerProperty(default=0)
     nextMove = ndb.KeyProperty(required=True)
@@ -70,7 +70,7 @@ class Game(ndb.Model):
     @property
     def _copyGameToForm(self):
         gf = GameForm()
-        for field in gf.all_field():
+        for field in gf.all_fields():
             if hasattr(self, field.name):
                 setattr(gf, field.name, getattr(self, field.name))
             elif field.name == 'urlsafe_key':
@@ -110,12 +110,12 @@ class Score(ndb.Model):
                         result=self.result)
 
 class PlayerForm(messages.Message):
-    name = messages.StringField(1)
+    name = messages.StringField(1, required=True)
     email = messages.StringField(2)
-    wins = ndb.IntegerField(3, required=True)
-    ties = ndb.IntegerField(4, required=True)
-    gamesCompleted = ndb.StringField(5, required=True)
-    winningPercentage = ndb.FloatField(6, required=True)
+    wins = messages.IntegerField(3, required=True)
+    ties = messages.IntegerField(4, required=True)
+    gamesCompleted = messages.IntegerField(5, required=True)
+    winningPercentage = messages.FloatField(6, required=True)
     points = messages.IntegerField(7)
 
 class PlayerForms(messages.Message):

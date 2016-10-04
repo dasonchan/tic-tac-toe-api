@@ -27,7 +27,7 @@ class TicTacToeApi(remote.Service):
     """Game API"""
 
     @endpoints.method(request_message=PLAYER_REQUEST,
-                      response_message=StringMessage,
+                      response_message=PlayerForm,
                       path='player',
                       name='create_player',
                       http_method='POST')
@@ -39,8 +39,7 @@ class TicTacToeApi(remote.Service):
             raise endpoints.BadRequestException('Please input a valid email address')
         player = Player(name=request.name, email=request.email)
         player.put()
-        return StringMessage(message='Player {} created!'.format(request.name))
-
+        return player._copyPlayerToForm
     @endpoints.method(response_message=PlayerForms,
                       path='player/ranking',
                       name='get_player_rankings',
@@ -53,4 +52,4 @@ class TicTacToeApi(remote.Service):
 
 
 
-api = endpoints.api_server([TicTacToeApi])
+api = endpoints.api_server([TicTacToeApi,])

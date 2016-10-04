@@ -5,6 +5,9 @@ api_version: 1
 threadsafe: yes
 
 handlers:
+- url: /_ah/spi/.*
+  script: api.api
+
 - url: /favicon\.ico
   static_files: favicon.ico
   upload: favicon\.ico
@@ -12,15 +15,12 @@ handlers:
 - url: .*
   script: main.app
 
-- url: /_ah/spi/.*
-  script: api.api
-
 libraries:
-- name: webapp2
-  version: "2.5.2"
-
 - name: endpoints
   version: latest
+
+- name: webapp2
+  version: "2.5.2"
 
 - name: pycrypto
   version: 2.6
