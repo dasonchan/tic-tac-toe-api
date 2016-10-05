@@ -64,6 +64,7 @@ class Game(ndb.Model):
     gameOver = ndb.BooleanProperty(default=False)
     winner = ndb.KeyProperty()
     tie = ndb.BooleanProperty(default=False)
+    history = ndb.PickleProperty(required=True)
 
     def copyGameToForm(self):
         form = GameForm(urlsafe_key=self.key.urlsafe(),
@@ -87,9 +88,35 @@ class Game(ndb.Model):
                     playerTwo = playerTwo,
                     nextMove = playerOne,
                     board = board)
+        game.history = []
 
         game.put()
         return game
+    
+    def endGame(self, winner=None):
+        self.gameOver = True
+        if winner:
+            self.winner = winner
+        else:
+            self.tie = True
+        self.put()
+        
+        # update results 
+        if winner:
+            result = 'Player One' if winner == self.playerOne else 'Player Two'
+            winner.get().add_win()
+            loser = self.playerOne if winner == self.playerTwo else self.playerTwo
+            loser.get().add_loss()
+        else:
+            result = 'tie'
+            self.playerOne.get().add_tie()
+            self.playerTwo.get().add_tie()
+        
+        score = Score(date=date.today(),
+                      playerOne=self.playerOne,
+                      playerTwo=self.playerTwo,
+                      result=result)
+        score.put()
 
 class Score(ndb.Model):
     """Define the Score Kind"""
@@ -98,7 +125,7 @@ class Score(ndb.Model):
     playerTwo = ndb.KeyProperty(required=True)
     result = ndb.StringProperty(required=True)
 
-    def _copyScoreToForm(self):
+    def copyScoreToForm(self):
         return ScoreForm(date=str(self.date),
                         playerOne=self.playerOne.get().name,
                         playerTwo=self.playerTwo.get().name,

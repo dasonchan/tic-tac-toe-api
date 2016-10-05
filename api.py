@@ -4,8 +4,8 @@ from google.appengine.api import memcache, mail
 from google.appengine.ext import ndb
 from google.appengine.api import taskqueue
 
-from models import Player, Game, Score, NewGameForm, StringMessage, GameForm, MoveForm, ScoreForm, ScoreForms, GameForms, PlayerForm, PlayerForms
-from utils import get_by_urlsafe, check_winner
+from models import Player, Game, Score, StringMessage, GameForm, ScoreForm, ScoreForms, GameForms, PlayerForm, PlayerForms
+from utils import get_by_urlsafe, check_winner, check_full
 from settings import WEB_CLIENT_ID
 
 EMAIL_SCOPE = endpoints.EMAIL_SCOPE
@@ -17,10 +17,13 @@ NEW_GAME_REQUEST = endpoints.ResourceContainer(
     playerTwo=messages.StringField(2)
     )
 GET_GAME_REQUEST = endpoints.ResourceContainer(urlsafe_game_key=messages.StringField(1),)
-MAKE_MOVE_REQUEST = endpoints.ResourceContainer(MoveForm, urlsafe_game_key=messages.StringField(1),)
+MAKE_MOVE_REQUEST = endpoints.ResourceContainer(
+    name=messages.StringField(1), 
+    move=messages.IntegerField(2), 
+    urlsafe_game_key=messages.StringField(3),)
 PLAYER_REQUEST = endpoints.ResourceContainer(name=messages.StringField(1), email=messages.StringField(2))
 
-# MEMCACHE_GAMES_PLAYED = "GAMES_PLAYED"
+MEMCACHE_GAMES_PLAYED = "GAMES_PLAYED"
 
 
 @endpoints.api(name='tic_tac_toe',
@@ -114,5 +117,89 @@ class TicTacToeApi(remote.Service):
         else:
             raise endpoints.NotFoundException('Game not found!')
         
+    @endpoints.method(request_message=MAKE_MOVE_REQUEST,
+                      response_message=GameForm,
+                      path='game/{urlsafe_game_key}',
+                      name='make_move',
+                      http_method='PUT')
+    def make_move(self, request):
+        """Make a move. Returns current game state"""
+        game = get_by_urlsafe(request.urlsafe_game_key, Game)
+        if not game:
+            raise endpoints.NotFoundException('Game not found')
+        if game.gameOver:
+            raise endpoints.NotFoundException('Game is over')
+        
+        player = Player.get_player_by_name(request.name)
+        if player.key != game.nextMove:
+            raise endpoints.BadRequestException('It is not your turn')
+        
+        # x is true when is player one's turn; false when player two's turn
+        x = True if player.key == game.playerOne else False
+        move = request.move
+        game.board[move] = 'X' if x else 'O'
+        game.history.append('X' if x else 'O', move)
+        game.nextMove = game.playerTwo if x else game.playerOne
+        
+        # check if there is a winner
+        winner = check_winner(game.board)
+        if winner:
+            game.endGame(player.key)
+        else:
+            if check_full(game.board):
+                # tie
+                game.endGame()
+            else:
+                taskqueue.add(url='/tasks/send_move',
+                              params={'user_key': game.next_move.urlsafe(),
+                                      'game_key': game.key.urlsafe()})
+        
+        game.put()
+        # Update memcache if game is over
+        if game.gameOver():
+            taskqueue.add(url='/tasks/update_finished_games')
+        return game.copyGameToForm()
     
+    @endpoints.method(request_message=GET_GAME_REQUEST,
+                      response_message=StringMessage,
+                      path='game/{urlsafe_game_key}/history',
+                      name='get_game_history',
+                      http_method='GET')
+    def get_game_history(self, request):
+        """Return a Game's move history"""
+        game = get_by_urlsafe(request.urlsafe_game_key, Game)
+        if not game:
+            raise endpoints.NotFoundException('Game not found')
+        return StringMessage(message=str(game.history))
+        
+    @endpoints.method(request_message=PLAYER_REQUEST,
+                      response_message=ScoreForms,
+                      path='scores',
+                      name='get_scores',
+                      http_method='GET')
+    def get_scores(self, request):
+        """Return all scores"""
+        player = Player.get_player_by_name(request.name)
+        if not player:
+            raise endpoints.NotFoundException('Player does not exist')
+        scores = Score.query(ndb.OR(Score.playerOne == player.key,
+                                    Score.playerTwo == player.key))
+        return ScoreForms(items=[score.copyScoreToForm() for score in scores])
+    
+    @endpoints.method(response_message=StringMessage,
+                      path='games/finished_games',
+                      name='get_finished_games',
+                      http_method='GET')
+    def get_finished_game(self, request):
+        """Get the number of finished games from memcache"""
+        return StringMessage(message=memcache.get(MEMCACHE_GAMES_PLAYED) or '')
+    
+    @staticmethod
+    def _update_finished_games():
+        """Generate memcache with the number of finished games"""
+        games = Game.query(Game.gameOver == True).fetch()
+        if games:
+            count = len(games)
+            memcache.set(MEMCACHE_GAMES_PLAYED,
+                         '%s games have been finished' % count)
 api = endpoints.api_server([TicTacToeApi,])

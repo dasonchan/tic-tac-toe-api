@@ -12,7 +12,10 @@ handlers:
   static_files: favicon.ico
   upload: favicon\.ico
 
-- url: .*
+- url: /tasks/update_finished_games
+  script: main.app
+
+- url: /crons/send_reminder
   script: main.app
 
 libraries:

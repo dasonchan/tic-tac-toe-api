@@ -43,3 +43,10 @@ def check_winner(board):
             board[2] == board[5] == board[8] != '' or
             board[0] == board[4] == board[8] != '' or
             board[2] == board[4] == board[6] != '')
+
+def check_full(board):
+    """Return true if the board is full"""
+    for block in board:
+        if not block:
+            return False
+    return True
