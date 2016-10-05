@@ -149,4 +149,4 @@ class MoveForm(messages.Message):
 
 class StringMessage(messages.Message):
     """StringMessage-- outbound (single) string message"""
-    data = messages.StringField(1, required=True)
+    message = messages.StringField(1, required=True)

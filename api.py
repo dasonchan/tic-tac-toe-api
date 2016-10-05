@@ -99,5 +99,20 @@ class TicTacToeApi(remote.Service):
                                   Game.playerTwo == player.key))
         
         return GameForms(items=[game.copyGameToForm() for game in games])
-
+    
+    @endpoints.method(request_message=GET_GAME_REQUEST,
+                      response_message=StringMessage,
+                      path='game/{urlsafe_game_key}', 
+                      name='cancel_game',
+                      http_method='DELETE')
+    def cancel_game(self, request):
+        """Delete a game"""
+        game = get_by_urlsafe(request.urlsafe_game_key, Game)
+        if game and not game.gameOver:
+            game.key.delete()
+            return StringMessage(message='Game - {} deleted.'.format(request.urlsafe_game_key))
+        else:
+            raise endpoints.NotFoundException('Game not found!')
+        
+    
 api = endpoints.api_server([TicTacToeApi,])
