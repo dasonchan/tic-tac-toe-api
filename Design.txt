@@ -1,0 +1,11 @@
+Design Reflections:
+
+-This project was started as an one-person tic-tac-toe game,
+but I decided to change it to a two-people game because it would
+be more practical.
+-Key is a better tool to store player info than player names.
+-Added tie as a boolean so that the result field can contain 
+three values: 'playerOne', 'playerTwo' and 'tie'.
+-I decided to give players 3 points for a win, 1 point for a tie 
+and 0 points for a loss. The rule is based on soccer's rule.
+-Added gameOver to show the state of the game
