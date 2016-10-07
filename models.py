@@ -24,9 +24,10 @@ class Player(ndb.Model):
     @property
     def winningPercentage(self):
         if self.gamesCompleted > 0:
-            return float(self.wins)/float(self.gamesCompleted)
+            return float(self.wins) / float(self.gamesCompleted)
         else:
             return float(0)
+
     @property
     def points(self):
         return self.wins * 3 + self.ties
@@ -79,20 +80,20 @@ class Game(ndb.Model):
         if self.tie:
             form.tie = self.tie
         return form
-    
+
     @classmethod
     def newGame(cls, playerOne, playerTwo):
         board = ['' for _ in range(9)]
-        
-        game = Game(playerOne = playerOne,
-                    playerTwo = playerTwo,
-                    nextMove = playerOne,
-                    board = board)
+
+        game = Game(playerOne=playerOne,
+                    playerTwo=playerTwo,
+                    nextMove=playerOne,
+                    board=board)
         game.history = []
 
         game.put()
         return game
-    
+
     def endGame(self, winner=None):
         self.gameOver = True
         if winner:
@@ -100,8 +101,8 @@ class Game(ndb.Model):
         else:
             self.tie = True
         self.put()
-        
-        # update results 
+
+        # update results
         if winner:
             result = 'Player One' if winner == self.playerOne else 'Player Two'
             winner.get().add_win()
@@ -111,12 +112,13 @@ class Game(ndb.Model):
             result = 'tie'
             self.playerOne.get().add_tie()
             self.playerTwo.get().add_tie()
-        
+
         score = Score(date=datetime.datetime.now(),
                       playerOne=self.playerOne,
                       playerTwo=self.playerTwo,
                       result=result)
         score.put()
+
 
 class Score(ndb.Model):
     """Define the Score Kind"""
@@ -127,9 +129,10 @@ class Score(ndb.Model):
 
     def copyScoreToForm(self):
         return ScoreForm(date=str(self.date),
-                        playerOne=self.playerOne.get().name,
-                        playerTwo=self.playerTwo.get().name,
-                        result=self.result)
+                         playerOne=self.playerOne.get().name,
+                         playerTwo=self.playerTwo.get().name,
+                         result=self.result)
+
 
 class PlayerForm(messages.Message):
     name = messages.StringField(1, required=True)
@@ -140,8 +143,10 @@ class PlayerForm(messages.Message):
     winningPercentage = messages.FloatField(6, required=True)
     points = messages.IntegerField(7)
 
+
 class PlayerForms(messages.Message):
-    items = messages.MessageField(PlayerForm, 1, repeated = True)
+    items = messages.MessageField(PlayerForm, 1, repeated=True)
+
 
 class GameForm(messages.Message):
     urlsafe_key = messages.StringField(1, required=True)
@@ -153,12 +158,15 @@ class GameForm(messages.Message):
     winner = messages.StringField(7)
     tie = messages.BooleanField(8)
 
+
 class GameForms(messages.Message):
     items = messages.MessageField(GameForm, 1, repeated=True)
+
 
 class NewGameForm(messages.Message):
     playerOne = messages.StringField(1, required=True)
     playerTwo = messages.StringField(2, required=True)
+
 
 class ScoreForm(messages.Message):
     date = messages.StringField(1, required=True)
@@ -166,13 +174,16 @@ class ScoreForm(messages.Message):
     playerTwo = messages.StringField(3, required=True)
     result = messages.StringField(4)
 
+
 class ScoreForms(messages.Message):
     items = messages.MessageField(ScoreForm, 1, repeated=True)
+
 
 class MoveForm(messages.Message):
     """Used to make a move in an existing game"""
     name = messages.StringField(1, required=True)
     move = messages.IntegerField(2, required=True)
+
 
 class StringMessage(messages.Message):
     """StringMessage-- outbound (single) string message"""

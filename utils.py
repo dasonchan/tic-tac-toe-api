@@ -4,6 +4,7 @@ import logging
 from google.appengine.ext import ndb
 import endpoints
 
+
 def get_by_urlsafe(urlsafe, model):
     """Returns an ndb.Model entity that the urlsafe key points to. Checks
         that the type of entity returned is of the correct kind. Raises an
@@ -34,6 +35,7 @@ def get_by_urlsafe(urlsafe, model):
         raise ValueError('Incorrect Kind')
     return entity
 
+
 def check_winner(board):
     return (board[0] == board[1] == board[2] != '' or
             board[3] == board[4] == board[5] != '' or
@@ -43,6 +45,7 @@ def check_winner(board):
             board[2] == board[5] == board[8] != '' or
             board[0] == board[4] == board[8] != '' or
             board[2] == board[4] == board[6] != '')
+
 
 def check_full(board):
     """Return true if the board is full"""
