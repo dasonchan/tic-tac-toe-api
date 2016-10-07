@@ -149,14 +149,14 @@ class TicTacToeApi(remote.Service):
             raise endpoints.BadRequestException('Please input a number for move')
         
         move = int(float(request.move))
-        if game.board[move] != '':
-            raise endpoints.BadRequestException('The block has been filled')
         # check if input for move within 9
-        if move >= 0 and move <= 8:        
+        if move in range(9):        
+            if game.board[move] != '':
+                raise endpoints.BadRequestException('The block has been filled')
             # x is true when is player one's turn; false when player two's turn
             x = True if player.key == game.playerOne else False
             game.board[move] = 'X' if x else 'O'
-            game.history.append('X' if x else 'O')
+            game.history.append(('X' if x else 'O', move))
             game.nextMove = game.playerTwo if x else game.playerOne
             
             # check if there is a winner
@@ -172,6 +172,7 @@ class TicTacToeApi(remote.Service):
 
         else:
             raise endpoints.BadRequestException('Input for move can only be 0~8')
+        
         
         return game.copyGameToForm()
        

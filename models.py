@@ -77,7 +77,7 @@ class Game(ndb.Model):
         if self.winner:
             form.winner = self.winner.get().name
         if self.tie:
-            form.time = self.tie
+            form.tie = self.tie
         return form
     
     @classmethod

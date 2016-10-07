@@ -15,3 +15,15 @@ and 0 points for a loss. The rule is based on soccer's rule.
 -Added nextMove to sort the order 
 -Using endpoints exceptions to handle error messages can be very 
 helpful for the users and developers 
+-One challenge for me was designing the models and forms. I had 
+multiple ideas but I was not sure which one would work better. I 
+decided to go ahead and start it without having a clear path and 
+it was getting pretty messy. At the end I had to stop the project 
+and redesign it. The development had become much easier after 
+having a plan. 
+-Another big challenge to me was testing. Due to the wrong 
+configuration, I was not able to deploy this project when I first 
+started it. I did not receive any error message on the console. 
+I tried to test it locally but for some reason Chrome would not 
+run it. Later I found out from a Udacity coach that I would need 
+to run script manually because of the update on Chrome.
