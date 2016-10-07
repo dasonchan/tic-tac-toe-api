@@ -3,6 +3,9 @@ Tic-Tac-Toe Game
 Set Up Instructions:
 1. Update the application ID on app.yaml to an ID you register on Google App Engine
 2. Run the app on devserver using dev_appserver.py DIR in terminal
+3. Create a new player using the create_player endpoint
+4. Use create_game endpoint to create a game. Remeber to save the urlsafe_key for later use
+
 
 Game Discription:
 Tic-Tac-Toe is a simple game. There are 9 blocks on the board and players take turn to draw 'X' or 'O' on the block. The player who occupies 3 consecutive blocks(vertical, horizontal, or diagonal)
@@ -37,7 +40,7 @@ Path: 'game'
 Method: POST
 Parameters: playerOne, playerTwo
 Returns: GameForm with initial game state.
-Description: Creates a new Game. playerOne and playerTwo are the names of the 'X' and 'O' player respectively. 
+Description: Creates a new Game. playerOne and playerTwo are the names of the 'X' and 'O' player respectively.
 
 get_game
 Path: 'game/{urlsafe_game_key}'
@@ -94,32 +97,3 @@ Method: GET
 Parameters: None
 Returns: PlayerForms sorted by user points.
 Description: Return all Players ranked by their points.
-
-
-Models:
-Player:
-Stores unique name and email address.
-Also keeps track of wins, ties and gameCompleted.
-
-Game:
-Stores unique game states. Associated with Player models via KeyProperties playerOne and playerTwo.
-
-Score:
-Records completed games. Associated with Players model via KeyProperty as well.
-
-
-Forms:
-GameForm
-Representation of a Game's state (urlsafe_key, board, playerOne, playerTwo, game_over, winner).
-GameForms
-Multiple GameForm container.
-ScoreForm
-Representation of a completed game's Score (date, winner, loser).
-ScoreForms
-Multiple ScoreForm container.
-PlayerForm
-Representation of Player. Includes winning percentage
-PlayerForms
-Container for one or more PlayerForm.
-StringMessage
-General purpose String container.

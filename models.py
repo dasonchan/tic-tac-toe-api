@@ -112,7 +112,7 @@ class Game(ndb.Model):
             self.playerOne.get().add_tie()
             self.playerTwo.get().add_tie()
         
-        score = Score(date=date.today(),
+        score = Score(date=datetime.datetime.now(),
                       playerOne=self.playerOne,
                       playerTwo=self.playerTwo,
                       result=result)
