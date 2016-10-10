@@ -11,9 +11,10 @@ class Player(ndb.Model):
     wins = ndb.IntegerProperty(default=0)
     ties = ndb.IntegerProperty(default=0)
     gamesCompleted = ndb.IntegerProperty(default=0)
+    # points = ndb.ComputedProperty(lambda self: self.get_points())
 
     @property
-    def copyPlayerToForm(self):
+    def copy_player_to_form(self):
         pf = PlayerForm()
         for field in pf.all_fields():
             if hasattr(self, field.name):
@@ -30,7 +31,7 @@ class Player(ndb.Model):
 
     @property
     def points(self):
-        return self.wins * 3 + self.ties
+       return self.wins * 3 + self.ties
 
     @classmethod
     def get_player_by_name(cls, name):
@@ -54,6 +55,9 @@ class Player(ndb.Model):
     def add_loss(self):
         """Add a loss. Used as additional method for extensibility."""
         self.update_stats()
+    
+    def get_points(self):
+        return self.wins * 3 + self.ties
 
 
 class Game(ndb.Model):
@@ -67,7 +71,7 @@ class Game(ndb.Model):
     tie = ndb.BooleanProperty(default=False)
     history = ndb.PickleProperty(required=True)
 
-    def copyGameToForm(self):
+    def copy_game_to_form(self):
         form = GameForm(urlsafe_key=self.key.urlsafe(),
                         board=str(self.board),
                         playerOne=self.playerOne.get().name,
@@ -127,7 +131,7 @@ class Score(ndb.Model):
     playerTwo = ndb.KeyProperty(required=True)
     result = ndb.StringProperty(required=True)
 
-    def copyScoreToForm(self):
+    def copy_score_to_form(self):
         return ScoreForm(date=str(self.date),
                          playerOne=self.playerOne.get().name,
                          playerTwo=self.playerTwo.get().name,

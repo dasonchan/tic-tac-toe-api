@@ -1,21 +1,27 @@
 import endpoints
-from protorpc import remote, messages, message_types
-from google.appengine.api import memcache, mail
+from google.appengine.api import mail
 from google.appengine.ext import ndb
-from google.appengine.api import taskqueue
-
+from protorpc import (
+    remote, 
+    messages, 
+    message_types,
+)
 from models import (
     Player,
     Game,
     Score,
     StringMessage,
     GameForm,
-    ScoreForm,
     ScoreForms,
     GameForms,
     PlayerForm,
-    PlayerForms)
-from utils import get_by_urlsafe, check_winner, check_full
+    PlayerForms,
+)
+from utils import (
+    get_by_urlsafe, 
+    check_winner, 
+    check_full,
+)
 from settings import WEB_CLIENT_ID
 
 EMAIL_SCOPE = endpoints.EMAIL_SCOPE
@@ -33,7 +39,8 @@ MAKE_MOVE_REQUEST = endpoints.ResourceContainer(
     move=messages.StringField(2, required=True),
     urlsafe_game_key=messages.StringField(3, required=True),)
 PLAYER_REQUEST = endpoints.ResourceContainer(
-    name=messages.StringField(1), email=messages.StringField(2))
+    name=messages.StringField(1), 
+    email=messages.StringField(2),)
 
 
 @endpoints.api(name='tic_tac_toe',
@@ -58,7 +65,7 @@ class TicTacToeApi(remote.Service):
                 'Please input a valid email address')
         player = Player(name=request.name, email=request.email)
         player.put()
-        return player.copyPlayerToForm
+        return player.copy_player_to_form
 
     @endpoints.method(response_message=PlayerForms,
                       path='player/ranking',
@@ -66,9 +73,12 @@ class TicTacToeApi(remote.Service):
                       http_method='GET')
     def get_player_rankings(self, request):
         """Return rankings for all Players"""
+        # players = Player.query()
+        # players = players.order(Player.points)
         players = Player.query(Player.gamesCompleted > 0).fetch()
         players = sorted(players, key=lambda x: x.points, reverse=True)
-        return PlayerForms(items=[player.copyPlayerToForm for player in players])
+        
+        return PlayerForms(items=[player.copy_player_to_form for player in players])
 
     @endpoints.method(request_message=NEW_GAME_REQUEST,
                       response_message=GameForm,
@@ -86,7 +96,7 @@ class TicTacToeApi(remote.Service):
                 'Player %s does not exist' % name)
         game = Game.newGame(playerOne.key, playerTwo.key)
 
-        return game.copyGameToForm()
+        return game.copy_game_to_form()
 
     @endpoints.method(request_message=GET_GAME_REQUEST,
                       response_message=GameForm,
@@ -99,7 +109,7 @@ class TicTacToeApi(remote.Service):
         if not game:
             raise endpoints.NotFoundException('Game does not exist!')
 
-        return game.copyGameToForm()
+        return game.copy_game_to_form()
 
     @endpoints.method(request_message=PLAYER_REQUEST,
                       response_message=GameForms,
@@ -114,7 +124,7 @@ class TicTacToeApi(remote.Service):
         games = Game.query(ndb.OR(Game.playerOne == player.key,
                                   Game.playerTwo == player.key)).filter(Game.gameOver == False)
 
-        return GameForms(items=[game.copyGameToForm() for game in games])
+        return GameForms(items=[game.copy_game_to_form() for game in games])
 
     @endpoints.method(request_message=GET_GAME_REQUEST,
                       response_message=StringMessage,
@@ -124,13 +134,15 @@ class TicTacToeApi(remote.Service):
     def cancel_game(self, request):
         """Delete a game"""
         game = get_by_urlsafe(request.urlsafe_game_key, Game)
-        if game and not game.gameOver:
-            game.key.delete()
-            return StringMessage(message='Game - {} deleted.'.format(request.urlsafe_game_key))
-        elif game and game.gameOver:
-            raise endpoints.BadRequestException('Game is already over!')
-        else:
-            raise endpoints.NotFoundException('Game not found!')
+
+        if not game:
+            raise endpoints.NotFoundException('Game not found.')
+        if game.game_over:
+            raise endpoints.ForbiddenException('Illegal action: Game is already over.')
+    
+        game.key.delete()
+    
+        return stringMessage('You have canceled the game.')
 
     @endpoints.method(request_message=MAKE_MOVE_REQUEST,
                       response_message=GameForm,
@@ -163,25 +175,35 @@ class TicTacToeApi(remote.Service):
             # x is true when is player one's turn; false when player two's turn
             x = True if player.key == game.playerOne else False
             game.board[move] = 'X' if x else 'O'
-            game.history.append(('X' if x else 'O', move))
             game.nextMove = game.playerTwo if x else game.playerOne
 
             # check if there is a winner
             winner = check_winner(game.board)
             if winner:
                 game.endGame(player.key)
+                winner = game.winner.get().name
+            
             else:
                 if check_full(game.board):
                     # tie
                     game.endGame()
-
+                winner = 'None'
+            
+            game.history.append(('X' if x else 'O', 
+                                 'Move: ' + str(move),
+                                 'Played by: ' + request.name,
+                                 'Next Move: ' + game.nextMove.get().name,
+                                 'Game Over: ' + str(game.gameOver),
+                                 'Tie: ' + str(game.tie),
+                                 'Winner: ' + winner,
+                                 ))
             game.put()
 
         else:
             raise endpoints.BadRequestException(
                 'Input for move can only be 0~8')
 
-        return game.copyGameToForm()
+        return game.copy_game_to_form()
 
     @endpoints.method(request_message=GET_GAME_REQUEST,
                       response_message=StringMessage,
@@ -207,6 +229,6 @@ class TicTacToeApi(remote.Service):
             raise endpoints.NotFoundException('Player does not exist')
         scores = Score.query(ndb.OR(Score.playerOne == player.key,
                                     Score.playerTwo == player.key))
-        return ScoreForms(items=[score.copyScoreToForm() for score in scores])
+        return ScoreForms(items=[score.copy_score_to_form() for score in scores])
 
 api = endpoints.api_server([TicTacToeApi, ])
